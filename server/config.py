@@ -1,8 +1,10 @@
 import os
 from dotenv import load_dotenv
 
-# 1. تحميل المتغيرات من ملف .env
-load_dotenv()
+# تحديد المسار الحالي للملف عشان يوصل لـ .env بدقة
+basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.env'))
+
 
 class Config:
     # 2. رابط قاعدة البيانات (بنجيبه من الـ .env)
