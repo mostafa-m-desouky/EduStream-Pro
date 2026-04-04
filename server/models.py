@@ -11,9 +11,13 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='student')
     gender = db.Column(db.String(10)) # Male, Female
-    profile_pic = db.Column(db.String(255))
-
+    profile_pic = db.Column(db.String(255), nullable=False, default='default.jpg')
+   
     courses = db.relationship('Course', backref= 'author', lazy=True)
+
+    enrollments = db.relationship('Enrollment', backref='student', lazy=True)
+    
+    payments = db.relationship('Payment', backref='payer', lazy=True)
 
  
 class Course(db.Model):
@@ -24,9 +28,11 @@ class Course(db.Model):
     price = db.Column(db.Float, nullable=False)
     duration_hours = db.Column(db.Integer)
     thumbnail = db.Column(db.String(255))
+
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    lessons = db.relationship('lesson', backref='course', lazy=True)
+    lessons = db.relationship('Lesson', backref='course', lazy=True)
+    course_enrollments = db.relationship('Enrollment', backref='enrolled_course', lazy=True)
 
 class Lesson(db.Model):
     __tablename__ = 'lessons'
@@ -60,16 +66,15 @@ class Payment(db.Model):
     
     # 5. العملة (عشان لو قررت تبيع بالدولار أو بالجنيه)
     currency = db.Column(db.String(10), default='EGP')
-    
-    # 6. الربط بالمستخدم (مين اللي دفع؟)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    
-    # 7. تاريخ العملية
+        
+    # Payment Date
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
