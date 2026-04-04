@@ -14,5 +14,8 @@ migrate = Migrate(app, db)
 def index():
     return "LearnFlow API is Running!"
 
+from routes import auth
+app.register_blueprint(auth.auth)
+
 if __name__ == '__main__':
     app.run(debug=True)
