@@ -1,9 +1,10 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from flask_login import UserMixin
 
 db = SQLAlchemy()
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), nullable=False)
@@ -13,11 +14,11 @@ class User(db.Model):
     gender = db.Column(db.String(10)) # Male, Female
     profile_pic = db.Column(db.String(255), nullable=False, default='default.jpg')
    
-    courses = db.relationship('Course', backref= 'author', lazy=True)
+    courses = db.relationship('Course', backref= 'author', lazy=True, cascade="all, delete-orphan")
 
-    enrollments = db.relationship('Enrollment', backref='student', lazy=True)
+    enrollments = db.relationship('Enrollment', backref='student', lazy=True, cascade="all, delete-orphan")
     
-    payments = db.relationship('Payment', backref='payer', lazy=True)
+    payments = db.relationship('Payment', backref='payer', lazy=True, cascade="all, delete-orphan")
 
  
 class Course(db.Model):
@@ -31,7 +32,7 @@ class Course(db.Model):
 
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    lessons = db.relationship('Lesson', backref='course', lazy=True)
+    lessons = db.relationship('Lesson', backref='course', lazy=True, cascade="all, delete-orphan")
     course_enrollments = db.relationship('Enrollment', backref='enrolled_course', lazy=True)
 
 class Lesson(db.Model):
