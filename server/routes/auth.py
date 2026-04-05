@@ -173,6 +173,46 @@ def profile():
         "data": user_data
     }, 200
 
+@auth.route('/update_profile', methods=['PATCH'])
+@login_required
+def update_profile():
+    user = db.session.get(User, current_user.id)
+
+    username = request.form.get('username', user.username).strip().title()
+    new_password = request.form.get('password', '')
+    confirm_password = request.form.get('confirm_password', '')
+    new_profile_pic = request.files.get('profile_pic')
+
+    if new_password:
+        if new_password != confirm_password:
+            return {"error": "Password and confirmation do not match"}, 400
+        if len(new_password) < 6:
+            return {"error": "Password is too short (min 6 characters)"}, 400
+        
+    if username:
+        user.username = username
+
+    if new_password:
+        user.password = generate_password_hash(new_password, method='scrypt')
+
+    if new_profile_pic and new_profile_pic.filename != '':
+        pic_name = media_handlers.save_picture(new_profile_pic)
+        user.profile_pic = pic_name
+
+    try:
+        db.session.commit()
+        return {
+            "status": "success",
+            "message": "Profile updated successfully",
+            "updated_data": {
+                "username": user.username,  
+                "profile_pic_url": url_for('static', filename='profile_pics/' + user.profile_pic, _external=True)
+            }
+        }, 200
+    except Exception as e:
+        db.session.rollback()
+        return {"error": "Could not update profile. Database error."}, 500
+        
 
 @auth.route('/delete_account', methods=['DELETE'])
 @login_required
