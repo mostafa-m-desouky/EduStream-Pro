@@ -28,7 +28,7 @@ class Course(db.Model):
     description = db.Column(db.Text)
     price = db.Column(db.Float, nullable=False)
     duration_hours = db.Column(db.Integer)
-    thumbnail = db.Column(db.String(255))
+    thumbnail = db.Column(db.String(255), nullable=False, default='default_course.jpg')
 
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
