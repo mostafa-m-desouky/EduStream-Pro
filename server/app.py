@@ -27,6 +27,8 @@ def load_user(user_id):
 
 from routes import auth
 app.register_blueprint(auth.auth, url_prefix='/api/auth')
+from routes import courses
+app.register_blueprint(courses.courses, url_prefix='/api/courses')
 
 if __name__ == '__main__':
     app.run(debug=True)
