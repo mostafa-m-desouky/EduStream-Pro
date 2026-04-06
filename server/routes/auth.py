@@ -59,7 +59,7 @@ def register():
     # 'default.jpg' defined in the User Model.
 
     if 'profile_pic' in request.files and request.files['profile_pic'].filename != '':
-        pic_name = media_handlers.save_picture(request.files['profile_pic'])
+        pic_name = media_handlers.save_picture(request.files['profile_pic'], folder='profile_pics')
     else:
         pic_name = 'male_default.png' if gender == 'male' else 'female_default.png'
 
@@ -196,7 +196,9 @@ def update_profile():
         user.password = generate_password_hash(new_password, method='scrypt')
 
     if new_profile_pic and new_profile_pic.filename != '':
-        pic_name = media_handlers.save_picture(new_profile_pic)
+        media_handlers.delete_old_picture(user.profile_pic, folder='profile_pics')
+
+        pic_name = media_handlers.save_picture(new_profile_pic, folder='profile_pics')
         user.profile_pic = pic_name
 
     try:
@@ -223,6 +225,8 @@ def delete_account():
     user = User.query.get(current_user.id) 
 
     try:
+        # Delete the user's profile picture from the filesystem if it's not a default image.
+        media_handlers.delete_old_picture(user.profile_pic, folder='profile_pics')
         # 1. Mark user for deletion in the session (Drafting).
         db.session.delete(user)
         # 2. Logout first to clear session cookies while the user object still exists in memory.
@@ -236,15 +240,4 @@ def delete_account():
     except Exception as e:
         db.session.rollback()
         return {"error": "Could not delete account. Database error."}, 500
-
-    
-
-    
-   
-    
-
-    
-    
-
-
 
