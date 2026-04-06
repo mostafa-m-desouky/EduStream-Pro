@@ -50,22 +50,18 @@ class Payment(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     
-    # 1. رقم العملية (المعرف الفريد اللي البنك بيبعتهولنا)
-    # ده بنسميه "المرجع" عشان لو حصلت مشكلة نقدر نراجع Stripe أو فودافون كاش
     transaction_id = db.Column(db.String(100), unique=True, nullable=False)
     
-    # 2. المبلغ المدفوع
     amount = db.Column(db.Float, nullable=False)
     
-    # 3. حالة الدفع (مهمة جداً للسيستم)
-    # الحالات: 'pending' (جاري), 'succeeded' (تم بنجاح), 'failed' (فشلت)
+    # 3. Status Of Payment
+    # Status (Pending, Succeeded, Failed) - Default: Pending
     status = db.Column(db.String(20), default='pending')
     
-    # 4. نوع الدفع (هنا السحر كله!)
-    # القيم الممكنة: 'Credit Card', 'Vodafone Cash', 'Fawry', 'Promo Code'
+    # 4. Type Of Payment
+    # 'Credit Card', 'Vodafone Cash', 'Fawry', 'Promo Code'
     payment_method = db.Column(db.String(50), nullable=False)
     
-    # 5. العملة (عشان لو قررت تبيع بالدولار أو بالجنيه)
     currency = db.Column(db.String(10), default='EGP')
         
     # Payment Date
