@@ -42,6 +42,11 @@ class Lesson(db.Model):
     content_url = db.Column(db.String(255))
     description = db.Column(db.Text)
     order = db.Column(db.Integer)
+
+    # [TODO] Video duration field is currently omitted.
+    # Reasoning: Integration with a video hosting service (like Cloudinary) 
+    # is planned for a future update, which will provide accurate metadata 
+    # (duration) automatically. For now, we focus on core lesson delivery.
     
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
 
