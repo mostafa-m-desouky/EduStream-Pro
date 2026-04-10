@@ -7,34 +7,73 @@ courses = Blueprint('courses', __name__)
 
 @courses.route('/all', methods=['GET'])
 def get_all_courses():
-    courses = Course.query.all()
-    course_list = []
-    for course in courses:
-        course_list.append({
-            "id": course.id,
-            "title": course.title,
-            "description": course.description,
-            "price": course.price,
-            "duration_hours": course.duration_hours,
-            "thumbnail_url": url_for('static', filename='course_thumbnails/' + course.thumbnail, _external=True)
-        })
-    return {"courses": course_list}
+    try:
+        courses = Course.query.all()
+        course_list = []
+        for course in courses:
+            course_list.append({
+                "id": course.id,
+                "title": course.title,
+                "description": course.description,
+                "price": course.price,
+                "duration_hours": course.duration_hours,
+                "thumbnail_url": url_for('static', filename='course_thumbnails/' + (course.thumbnail or 'default_course.jpg'), _external=True),
+                "author_name": course.author.username
+            })
+        return {"courses": course_list}, 200
+    except Exception as e:
+        return {"error": "Could not fetch courses. Database error."}, 500
 
 @courses.route('/my_courses', methods=['GET'])
 @login_required
 def get_my_courses():
-    courses = Course.query.filter_by(author_id=current_user.id).all()
-    course_list = []
-    for course in courses:
-        course_list.append({
+    try:
+        my_courses_query = Course.query.filter_by(author_id=current_user.id).all()
+        my_courses = []
+        for course in my_courses_query:
+            my_courses.append({
+                "id": course.id,
+                "title": course.title,
+                "description": course.description,
+                "price": course.price,
+                "duration_hours": course.duration_hours,
+                "thumbnail_url": url_for('static', filename='course_thumbnails/' + (course.thumbnail or 'default_course.jpg'), _external=True)
+            })
+        return {"my_courses": my_courses}, 200
+    except Exception as e:
+        return {"error": "Could not fetch your course. Database error."}, 500
+    
+
+    
+@courses.route('/get_course_details/<int:course_id>', methods=['GET'])
+def get_course_details(course_id):
+    try:
+        course = db.session.get(Course, course_id)
+        if not course:
+            return {"error": "Course not found"}, 404
+        
+        lessons_list = []
+        for lesson in course.lessons:
+            lessons_list.append({
+                "id": lesson.id,
+                "title": lesson.title,
+                "description": lesson.description,
+                "content_url": lesson.content_url,
+                "order": lesson.order
+            })
+
+        return {
             "id": course.id,
             "title": course.title,
             "description": course.description,
             "price": course.price,
             "duration_hours": course.duration_hours,
-            "thumbnail_url": url_for('static', filename='course_thumbnails/' + course.thumbnail, _external=True)
-        })
-    return {"courses": course_list}
+            "thumbnail_url": url_for('static', filename='course_thumbnails/' + (course.thumbnail or 'default_course.jpg'), _external=True),
+            "author_name": course.author.username,
+            "lessons": lessons_list
+        }, 200
+    except Exception as e:
+        return {"error": "Could not fetch course details. Database error."}, 500
 
 
 @courses.route('/create_course', methods=['POST'])
@@ -103,10 +142,18 @@ def update_course(course_id):
     if course.author_id != current_user.id:
         return {"error": "You can only update your own courses"}, 403
     
-    title = request.form.get('title', course.title).strip()
-    description = request.form.get('description', course.description).strip()
+    new_title = request.form.get('title', '').strip()
+    new_description = request.form.get('description', '').strip()
     price_raw = request.form.get('price', str(course.price))
     duration_raw = request.form.get('duration_hours', str(course.duration_hours))
+
+    #[NOTE] For course updates, we allow partial updates. If a field is not provided, we keep the existing value.
+    if new_title:
+        course.title = new_title
+
+    # [NOTE] For course updates, we allow partial updates. If a field is not provided, we keep the existing value.
+    if new_description: 
+        course.description = new_description
 
     if price_raw is not None and price_raw.strip() != "":
         try:
@@ -126,9 +173,6 @@ def update_course(course_id):
         course_pic = media_handlers.save_picture(request.files['course_pic'], folder='course_thumbnails')
         course.thumbnail = course_pic
 
-    course.title = title
-    course.description = description
-
     try:
         db.session.commit()
         return {
@@ -137,6 +181,7 @@ def update_course(course_id):
             "updated_course": {
                 "id": course.id,
                 "title": course.title,
+                "description": course.description,
                 "thumbnail_url": url_for('static', filename='course_thumbnails/' + course.thumbnail, _external=True)
             }
         }, 200
