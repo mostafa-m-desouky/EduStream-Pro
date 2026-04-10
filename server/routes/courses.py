@@ -5,6 +5,36 @@ from utils import media_handlers
 
 courses = Blueprint('courses', __name__)
 
+@courses.route('/all', methods=['GET'])
+def get_all_courses():
+    courses = Course.query.all()
+    course_list = []
+    for course in courses:
+        course_list.append({
+            "id": course.id,
+            "title": course.title,
+            "description": course.description,
+            "price": course.price,
+            "duration_hours": course.duration_hours,
+            "thumbnail_url": url_for('static', filename='course_thumbnails/' + course.thumbnail, _external=True)
+        })
+    return {"courses": course_list}
+
+@courses.route('/my_courses', methods=['GET'])
+@login_required
+def get_my_courses():
+    courses = Course.query.filter_by(author_id=current_user.id).all()
+    course_list = []
+    for course in courses:
+        course_list.append({
+            "id": course.id,
+            "title": course.title,
+            "description": course.description,
+            "price": course.price,
+            "duration_hours": course.duration_hours,
+            "thumbnail_url": url_for('static', filename='course_thumbnails/' + course.thumbnail, _external=True)
+        })
+    return {"courses": course_list}
 
 
 @courses.route('/create_course', methods=['POST'])
@@ -19,8 +49,11 @@ def create_course():
     price_raw = request.form.get('price', '0').strip()
     duration_raw = request.form.get('duration_hours', '0').strip()
 
-    if not title or not price_raw or not duration_raw:
-        return {"error": "Title, price, and duration are required"}, 400
+    if not title or title == "":
+        return {"error": "Title cannot be empty"}, 400
+
+    if not price_raw or not duration_raw:
+        return {"error": "Price and duration are required"}, 400
     
     try:
         price = float(price_raw)
@@ -110,3 +143,23 @@ def update_course(course_id):
     except Exception as e:
         db.session.rollback()
         return {"error": "Could not update course. Database error."}, 500
+    
+@courses.route('/delete_course/<int:course_id>', methods=['DELETE'])
+@login_required
+def delete_course(course_id):
+    course = db.session.get(Course, course_id)
+    if not course:
+        return {"error": "Course not found"}, 404
+    
+    if course.author_id != current_user.id:
+        return {"error": "You can only delete your own courses"}, 403
+    
+    try:
+        media_handlers.delete_old_picture(course.thumbnail, folder='course_thumbnails')
+
+        db.session.delete(course)
+        db.session.commit()
+        return {"status": "success", "message": "Course deleted successfully"}, 200
+    except Exception as e:
+        db.session.rollback()
+        return {"error": "Could not delete course. Database error."}, 500
