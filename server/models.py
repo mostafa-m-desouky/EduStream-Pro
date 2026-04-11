@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import CheckConstraint
 from datetime import datetime
 from flask_login import UserMixin
 
@@ -42,6 +43,10 @@ class Lesson(db.Model):
     content_url = db.Column(db.String(255))
     description = db.Column(db.Text)
     order = db.Column(db.Integer)
+
+    __table_args__ = (
+        CheckConstraint('order >= 1', name='check_order_positive'),
+    )
 
     # [TODO] Video duration field is currently omitted.
     # Reasoning: Integration with a video hosting service (like Cloudinary) 
