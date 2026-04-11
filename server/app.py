@@ -25,6 +25,13 @@ def index():
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
+@login_manager.unauthorized_handler
+def unauthorized():
+    return {
+        "status": "error",
+        "message": "Please log in to access this page."
+    }, 401
+
 from routes import auth
 app.register_blueprint(auth.auth, url_prefix='/api/auth')
 
