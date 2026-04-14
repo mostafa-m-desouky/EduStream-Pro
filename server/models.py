@@ -21,6 +21,8 @@ class User(db.Model, UserMixin):
     
     payments = db.relationship('Payment', backref='payer', lazy=True, cascade="all, delete-orphan")
 
+    def __repr__(self):
+        return f'<User {self.username} (Role: {self.role})>'
  
 class Course(db.Model):
     __tablename__ = 'courses'
@@ -34,7 +36,11 @@ class Course(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     lessons = db.relationship('Lesson', backref='course', lazy=True, cascade="all, delete-orphan")
+    
     course_enrollments = db.relationship('Enrollment', backref='enrolled_course', lazy=True)
+    course_payments = db.relationship('Payment', backref='paid_course', lazy=True)
+    def __repr__(self):
+        return f'<Course {self.title} (Price: {self.price})>'
 
 class Lesson(db.Model):
     __tablename__ = 'lessons'
@@ -54,6 +60,9 @@ class Lesson(db.Model):
     # (duration) automatically. For now, we focus on core lesson delivery.
     
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+
+    def __repr__(self):
+        return f'<Lesson {self.title} (Course ID: {self.course_id})>'
 
 class Payment(db.Model):
     __tablename__ = 'payments'
@@ -79,9 +88,26 @@ class Payment(db.Model):
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    
+    # اختياري: ربط الدفع بعملية الاشتراك نفسها
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollments.id'), nullable=True)
+
+def __repr__(self):
+        return f'<Payment {self.transaction_id} Amount:{self.amount} Status:{self.status}>'
+
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    status = db.Column(db.String(20), default='pending') # pending, active, cancelled
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'course_id', name='unique_user_course_enrollment'),
+    )
+
+    def __repr__(self):
+        return f'<Enrollment User:{self.user_id} Course:{self.course_id} Status:{self.status}>'
