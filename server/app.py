@@ -2,7 +2,8 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from config import Config
-from models import db, User, Course, Lesson, Payment, Enrollment
+from models import db, User
+from flask_cors import CORS
 from flask_login import LoginManager
 
 
@@ -11,6 +12,7 @@ app.config.from_object(Config)
 
 db.init_app(app)
 migrate = Migrate(app, db)
+CORS(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -29,22 +31,19 @@ def unauthorized():
         "message": "Please log in to access this page."
     }, 401
 
-from routes import main
-app.register_blueprint(main.main)
+from routes.main import main
+from routes.auth import auth
+from routes.courses import courses
+from routes.lessons import lessons
+from routes.enrollments import enrollments
+from routes.payments import payments
 
-from routes import auth
-app.register_blueprint(auth.auth, url_prefix='/api/auth')
-
-from routes import courses
-app.register_blueprint(courses.courses, url_prefix='/api/courses')
-
-from routes import lessons
-app.register_blueprint(lessons.lessons, url_prefix='/api/lessons')
-
-from routes import enrollments
-app.register_blueprint(enrollments.enrollments, url_prefix='/api/enrollments')
-from routes import payments
-app.register_blueprint(payments.payments, url_prefix='/api/payments')
+app.register_blueprint(main)
+app.register_blueprint(auth, url_prefix='/api/auth')
+app.register_blueprint(courses, url_prefix='/api/courses')
+app.register_blueprint(lessons, url_prefix='/api/lessons')
+app.register_blueprint(enrollments, url_prefix='/api/enrollments')
+app.register_blueprint(payments, url_prefix='/api/payments')
 
 if __name__ == '__main__':
     app.run(debug=True)
