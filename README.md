@@ -13,6 +13,7 @@ The project is divided into two main directories:
 
 2. **Client (Frontend):**
    - Responsibilities: User Interface and consuming the Backend API.
+   - Status: Under Development (Looking for contributors!)
 
 ---
 
@@ -25,8 +26,8 @@ To run the full project, follow the instructions inside each directory.
 1. Navigate to the server folder: `cd server`
 2. Create a virtual environment: `python -m venv venv`
 3. Activate it:
-   - Windows: `venv\Scripts\activate`
-   - Mac/Linux: `source venv/bin/activate`
+   - **Windows:** `venv\Scripts\activate`
+   - **Mac/Linux:** `source venv/bin/activate`
 4. Install requirements: `pip install -r requirements.txt`
 5. Configure your Database URI in `app.py`.
 6. Run the server: `flask run`
@@ -58,3 +59,7 @@ To run the full project, follow the instructions inside each directory.
 - The project follows a "Client-Server" architecture.
 - The Backend handles all security and data persistence.
 - The Frontend focuses on the user experience and interaction.
+
+## 🤝 Open for Collaboration
+
+I am currently looking for a **Frontend Developer** to build the client-side of this platform (React/Vue). If you're interested in building a modern LMS together, feel free to reach out!

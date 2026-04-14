@@ -50,7 +50,7 @@ The server manages five main entities:
    Windows:
 
    ```bash
-      npm run test
+      venv\Scripts\activate
    ```
 
    Mac/Linux:
@@ -92,9 +92,9 @@ The server manages five main entities:
 
 ### Payments & Enrollments:
 
-- Process Payment: POST /api/payments/checkout
-- Enroll in Course: POST /api/enrollments/join
-- My Enrolled Courses: GET /api/enrollments/my-courses
+- Payment Process: POST /api/payments/confirm/<int:course_id>
+- Checkout: GET /api/payments/checkout/<int:course_id>
+- Enrollment: POST /api/enrollments/enroll/<int:course_id>
 
 ## Project Architecture
 
