@@ -17,9 +17,6 @@ login_manager.init_app(app)
 # Redirects to /login if not logged in
 login_manager.login_view = 'auth.login'
 
-@app.route('/')
-def index():
-    return "LearnFlow API is Running!"
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -32,6 +29,9 @@ def unauthorized():
         "message": "Please log in to access this page."
     }, 401
 
+from routes import main
+app.register_blueprint(main.main)
+
 from routes import auth
 app.register_blueprint(auth.auth, url_prefix='/api/auth')
 
@@ -40,6 +40,11 @@ app.register_blueprint(courses.courses, url_prefix='/api/courses')
 
 from routes import lessons
 app.register_blueprint(lessons.lessons, url_prefix='/api/lessons')
+
+from routes import enrollments
+app.register_blueprint(enrollments.enrollments, url_prefix='/api/enrollments')
+from routes import payments
+app.register_blueprint(payments.payments, url_prefix='/api/payments')
 
 if __name__ == '__main__':
     app.run(debug=True)
