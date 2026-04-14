@@ -1,5 +1,5 @@
 from models import User, Course, db
-from flask import (Blueprint, request, url_for)
+from flask import (Blueprint, request, url_for, jsonify)
 from flask_login import login_required, current_user
 from utils import media_handlers
 
@@ -20,9 +20,9 @@ def get_all_courses():
                 "thumbnail_url": url_for('static', filename='course_thumbnails/' + (course.thumbnail or 'default_course.jpg'), _external=True),
                 "author_name": course.author.username
             })
-        return {"courses": course_list}, 200
+        return jsonify({"courses": course_list}), 200
     except Exception as e:
-        return {"error": "Could not fetch courses. Database error."}, 500
+        return jsonify({"error": "Could not fetch courses. Database error."}), 500
 
 @courses.route('/my_courses', methods=['GET'])
 @login_required
@@ -39,10 +39,9 @@ def get_my_courses():
                 "duration_hours": course.duration_hours,
                 "thumbnail_url": url_for('static', filename='course_thumbnails/' + (course.thumbnail or 'default_course.jpg'), _external=True)
             })
-        return {"my_courses": my_courses}, 200
+        return jsonify({"my_courses": my_courses}), 200
     except Exception as e:
-        return {"error": "Could not fetch your course. Database error."}, 500
-    
+        return jsonify({"error": "Could not fetch your course. Database error."}), 500
 
     
 @courses.route('/get_course_details/<int:course_id>', methods=['GET'])
@@ -50,7 +49,7 @@ def get_course_details(course_id):
     try:
         course = db.session.get(Course, course_id)
         if not course:
-            return {"error": "Course not found"}, 404
+            return jsonify({"error": "Course not found"}), 404
         
         lessons_list = []
         for lesson in course.lessons:
@@ -62,7 +61,7 @@ def get_course_details(course_id):
                 "order": lesson.order
             })
 
-        return {
+        return jsonify({
             "id": course.id,
             "title": course.title,
             "description": course.description,
@@ -71,9 +70,9 @@ def get_course_details(course_id):
             "thumbnail_url": url_for('static', filename='course_thumbnails/' + (course.thumbnail or 'default_course.jpg'), _external=True),
             "author_name": course.author.username,
             "lessons": lessons_list
-        }, 200
+        }), 200
     except Exception as e:
-        return {"error": "Could not fetch course details. Database error."}, 500
+        return jsonify({"error": "Could not fetch course details. Database error."}), 500
 
 
 @courses.route('/create_course', methods=['POST'])
@@ -81,24 +80,24 @@ def get_course_details(course_id):
 def create_course():
     user = db.session.get(User, current_user.id)
     if current_user.role != 'teacher':
-        return {"error": "Only teachers can create courses"}, 403
-    
+        return jsonify({"error": "Only teachers can create courses"}), 403
+
     title = request.form.get('title', '').strip()
     description = request.form.get('description', '').strip()
     price_raw = request.form.get('price', '0').strip()
     duration_raw = request.form.get('duration_hours', '0').strip()
 
     if not title or title == "":
-        return {"error": "Title cannot be empty"}, 400
+        return jsonify({"error": "Title cannot be empty"}), 400
 
     if not price_raw or not duration_raw:
-        return {"error": "Price and duration are required"}, 400
+        return jsonify({"error": "Price and duration are required"}), 400
     
     try:
         price = float(price_raw)
         duration_hours = int(duration_raw)
     except ValueError:
-        return {"error": "Price must be a number and duration must be an integer"}, 400
+        return jsonify({"error": "Price must be a number and duration must be an integer"}), 400
     
     if 'course_pic' in request.files and request.files['course_pic'].filename != '':
         course_pic = media_handlers.save_picture(request.files['course_pic'], folder='course_thumbnails')
@@ -118,7 +117,7 @@ def create_course():
     try:
         db.session.add(new_course)
         db.session.commit()
-        return {
+        return jsonify({
             "status": "success",
             "message": "Course created successfully",
             "course": {
@@ -126,10 +125,10 @@ def create_course():
                 "title": new_course.title,
                 "thumbnail_url": url_for('static', filename='course_thumbnails/' + new_course.thumbnail, _external=True)
             }
-        }, 201
+        }), 201
     except Exception as e:
         db.session.rollback()
-        return {"error": "Could not create course. Database error."}, 500
+        return jsonify({"error": "Could not create course. Database error."}), 500
 
     
 @courses.route('/update_course/<int:course_id>', methods=['PATCH'])
@@ -137,10 +136,10 @@ def create_course():
 def update_course(course_id):
     course = db.session.get(Course, course_id)
     if not course:
-        return {"error": "Course not found"}, 404
+        return jsonify({"error": "Course not found"}), 404
     
     if course.author_id != current_user.id:
-        return {"error": "You can only update your own courses"}, 403
+        return jsonify({"error": "You can only update your own courses"}), 403
     
     new_title = request.form.get('title', '').strip()
     new_description = request.form.get('description', '').strip()
@@ -159,13 +158,13 @@ def update_course(course_id):
         try:
             course.price = float(price_raw.strip())
         except ValueError:
-            return {"error": "Price must be a number"}, 400
+            return jsonify({"error": "Price must be a number"}), 400
         
     if duration_raw is not None and duration_raw.strip() != "":
         try:
             course.duration_hours = int(duration_raw.strip())
         except ValueError:
-            return {"error": "Duration must be an integer"}, 400
+            return jsonify({"error": "Duration must be an integer"}), 400
         
     if 'course_pic' in request.files and request.files['course_pic'].filename != '':
         media_handlers.delete_old_picture(course.thumbnail, folder='course_thumbnails')
@@ -175,7 +174,7 @@ def update_course(course_id):
 
     try:
         db.session.commit()
-        return {
+        return jsonify({
             "status": "success",
             "message": "Course updated successfully",
             "updated_course": {
@@ -184,27 +183,27 @@ def update_course(course_id):
                 "description": course.description,
                 "thumbnail_url": url_for('static', filename='course_thumbnails/' + course.thumbnail, _external=True)
             }
-        }, 200
+        }), 200
     except Exception as e:
         db.session.rollback()
-        return {"error": "Could not update course. Database error."}, 500
-    
+        return jsonify({"error": "Could not update course. Database error."}), 500
+
 @courses.route('/delete_course/<int:course_id>', methods=['DELETE'])
 @login_required
 def delete_course(course_id):
     course = db.session.get(Course, course_id)
     if not course:
-        return {"error": "Course not found"}, 404
+        return jsonify({"error": "Course not found"}), 404
     
     if course.author_id != current_user.id:
-        return {"error": "You can only delete your own courses"}, 403
+        return jsonify({"error": "You can only delete your own courses"}), 403
     
     try:
         media_handlers.delete_old_picture(course.thumbnail, folder='course_thumbnails')
 
         db.session.delete(course)
         db.session.commit()
-        return {"status": "success", "message": "Course deleted successfully"}, 200
+        return jsonify({"status": "success", "message": "Course deleted successfully"}), 200
     except Exception as e:
         db.session.rollback()
-        return {"error": "Could not delete course. Database error."}, 500
+        return jsonify({"error": "Could not delete course. Database error."}), 500

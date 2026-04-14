@@ -1,4 +1,4 @@
-from flask import (Blueprint, request, url_for)
+from flask import (Blueprint, request, url_for, jsonify)
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User, db
 from utils import media_handlers
@@ -12,10 +12,10 @@ ALLOWED_ROLES = ['student', 'teacher']
 @auth.route('/register', methods=['POST'])
 def register():
     if current_user.is_authenticated:
-        return {
+        return jsonify({
             "status": "info",
             "message": "You already have an account and you are logged in!"
-        }, 200
+        }), 200
     # Using request.form and request.files instead of get_json() 
     # because the request contains binary data (profile picture) request.get_json().
 
@@ -32,27 +32,27 @@ def register():
 
 
     if not username:
-        return {"error": "Username cannot be empty"}, 400
+        return jsonify({"error": "Username cannot be empty"}), 400
 
     if db.session.query(User).filter_by(email=email).first():
-            return {
+            return jsonify({
                  'status': "error",
                  'message': "This Email Already Exist"
-            }, 409
+            }), 409
     
     if not raw_password or len(raw_password) < 6:
-        return {"error": "Password is too short (min 6 characters)"}, 400
+        return jsonify({"error": "Password is too short (min 6 characters)"}), 400
     
     hashed_password = generate_password_hash(raw_password, method='scrypt')
 
     if gender not in ['male', 'female']:
-        return {"error": "Invalid gender value"}, 400
+        return jsonify({"error": "Invalid gender value"}), 400
     
     if role not in ALLOWED_ROLES:
-        return {
+        return jsonify({
             "status": "error",
             "message": f"Invalid role. Allowed roles are: {', '.join(ALLOWED_ROLES)}"
-        }, 400
+        }), 400
     
 
     # If pic_name is None, the database will automatically use the 
@@ -75,54 +75,54 @@ def register():
     try:
         db.session.add(user)
         db.session.commit()
-        return {
+        return jsonify({
             "status": "success",
             "message": "User registered successfully",
             "user_id": user.id
-        }, 201
+        }), 201
     except Exception as e:
         db.session.rollback()
-        return {"error": "Could not register user. Database error."}, 500
+        return jsonify({"error": "Could not register user. Database error."}), 500
     
 
 @auth.route('/login', methods=['POST'])
 def login():
     if current_user.is_authenticated:
-        return {
+        return jsonify({
             "status": "info",
             "message": "You are already logged in!"
-        }, 200
-    
+        }), 200
+
     data = request.get_json()
     # Check if data is None, which means the client did not send a JSON body or sent an invalid JSON.
     if not data:
-        return {"error": "Missing JSON request"}, 400
-    
+        return jsonify({"error": "Missing JSON request"}), 400
+
     email = data.get('email', '').strip()
     raw_password = data.get('password', '')
 
     user = db.session.query(User).filter_by(email=email).first()
 
     if not user or not check_password_hash(user.password, raw_password):
-        return {"error": "Invalid email or password"}, 401
+        return jsonify({"error": "Invalid email or password"}), 401
     else:
         login_user(user, remember=True)
-        return {
+        return jsonify({
             "status": "success",
             "message": "Login successful",
             "user_id": user.id,
             "username": user.username,
             "role": user.role
-        }, 200
+        }), 200
     
 @auth.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
-    return {
+    return jsonify({
         "status": "success",
         "message": "Logout successful"
-    }, 200
+    }), 200
 
 @auth.route('/profile', methods=['GET'])
 @login_required
@@ -168,10 +168,10 @@ def profile():
             for enrollment in user.enrollments
         ]
 
-    return {
+    return jsonify({
         "status": "success",
         "data": user_data
-    }, 200
+    }), 200
 
 @auth.route('/update_profile', methods=['PATCH'])
 @login_required
@@ -185,10 +185,10 @@ def update_profile():
 
     if new_password:
         if new_password != confirm_password:
-            return {"error": "Password and confirmation do not match"}, 400
+            return jsonify({"error": "Password and confirmation do not match"}), 400
         if len(new_password) < 6:
-            return {"error": "Password is too short (min 6 characters)"}, 400
-        
+            return jsonify({"error": "Password is too short (min 6 characters)"}), 400
+
     if username:
         user.username = username
 
@@ -203,17 +203,17 @@ def update_profile():
 
     try:
         db.session.commit()
-        return {
+        return jsonify({
             "status": "success",
             "message": "Profile updated successfully",
             "updated_data": {
                 "username": user.username,  
                 "profile_pic_url": url_for('static', filename='profile_pics/' + user.profile_pic, _external=True)
             }
-        }, 200
+        }), 200
     except Exception as e:
         db.session.rollback()
-        return {"error": "Could not update profile. Database error."}, 500
+        return jsonify({"error": "Could not update profile. Database error."}), 500
         
 
 @auth.route('/delete_account', methods=['DELETE'])
@@ -233,11 +233,11 @@ def delete_account():
         logout_user()
         # 3. Commit to finalize the deletion of the user and all cascaded data in Postgres.
         db.session.commit()
-        return {
+        return jsonify({
             "status": "success",
             "message": "Account deleted successfully"
-        }, 200
+        }), 200
     except Exception as e:
         db.session.rollback()
-        return {"error": "Could not delete account. Database error."}, 500
+        return jsonify({"error": "Could not delete account. Database error."}), 500
 

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, url_for
+from flask import Blueprint, request, url_for, jsonify
 from flask_login import login_required, current_user
 from models import db, Lesson, Course
 
@@ -8,7 +8,7 @@ lessons = Blueprint('lessons', __name__)
 def get_lessons(course_id):
     course = db.session.get(Course, course_id)
     if not course:
-        return {"error": "Course not found"}, 404
+        return jsonify({"error": "Course not found"}), 404
     
     lessons_list = []
     for lesson in course.lessons:
@@ -19,17 +19,17 @@ def get_lessons(course_id):
             "content_url": lesson.content_url,
             "order": lesson.order
         })
-    return {
+    return jsonify({
         "course_title": course.title,
         "total_lessons": len(lessons_list),
         "lessons": lessons_list
-    }, 200
+    }), 200
 
 @lessons.route('/lesson/<int:lesson_id>', methods=['GET'])
 def get_lesson_details(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
     if not lesson:
-        return {"error": "Lesson not found"}, 404
+        return jsonify({"error": "Lesson not found"}), 404
     
     prev_lesson = Lesson.query.filter_by(
         course_id=lesson.course_id, 
@@ -41,7 +41,7 @@ def get_lesson_details(lesson_id):
         order=lesson.order + 1
     ).first()
     
-    return {
+    return jsonify({
         "status": "success",
         "data": {
             "id": lesson.id,
@@ -58,17 +58,17 @@ def get_lesson_details(lesson_id):
                 "next_lesson_id": next_lesson.id if next_lesson else None
             }
         }
-    }, 200
+    }), 200
 
 @lessons.route('/create_lesson/<int:course_id>', methods=['POST'])
 @login_required
 def create_lesson(course_id):
     course = db.session.get(Course, course_id)
     if not course:
-        return {"error": "Course not found"}, 404
+        return jsonify({"error": "Course not found"}), 404
     if course.author_id != current_user.id:
-        return {"error": "Unauthorized. Only the course author can add lessons."}, 403
-    
+        return jsonify({"error": "Unauthorized. Only the course author can add lessons."}), 403
+
     title = request.form.get('title', '').strip()
     description = request.form.get('description', '').strip()
     # [NOTE] For production scalability, we store video content as URLs. 
@@ -80,9 +80,9 @@ def create_lesson(course_id):
     new_order = current_lessons_count + 1
 
     if not title:
-        return {"error": "Lesson title is required"}, 400
+        return jsonify({"error": "Lesson title is required"}), 400
     if not content_url:
-        return {"error": "Content URL is required"}, 400
+        return jsonify({"error": "Content URL is required"}), 400
 
     new_lesson = Lesson(
         title=title,
@@ -94,7 +94,7 @@ def create_lesson(course_id):
     try:
         db.session.add(new_lesson)
         db.session.commit()
-        return {
+        return jsonify({
             "message": "Lesson created successfully",
             "lesson": {
                 "id": new_lesson.id,
@@ -103,20 +103,20 @@ def create_lesson(course_id):
                 "content_url": new_lesson.content_url,
                 "order": new_lesson.order
             }
-        }, 201
+        }), 201
     except Exception as e:
         db.session.rollback()
-        return {"error": "Could not create lesson. Database error."}, 500
+        return jsonify({"error": "Could not create lesson. Database error."}), 500
 
 @lessons.route('/update_lesson/<int:lesson_id>', methods=['PATCH'])
 @login_required
 def update_lesson(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
     if not lesson:
-        return {"error": "Lesson not found"}, 404
+        return jsonify({"error": "Lesson not found"}), 404
 
     if lesson.course.author_id != current_user.id:
-        return {"error": "You don't have permission to update this lesson"}, 403
+        return jsonify({"error": "You don't have permission to update this lesson"}), 403
 
     title = request.form.get('title', '').strip()
     description = request.form.get('description', '').strip()
@@ -131,7 +131,7 @@ def update_lesson(lesson_id):
 
     try:
         db.session.commit()
-        return {
+        return jsonify({
             "message": "Lesson updated successfully",
             "lesson": {
                 "id": lesson.id,
@@ -140,10 +140,10 @@ def update_lesson(lesson_id):
                 "content_url": lesson.content_url,
                 "order": lesson.order
             }
-        }, 200
+        }), 200
     except Exception as e:
         db.session.rollback()
-        return {"error": "Could not update lesson. Database error."}, 500
+        return jsonify({"error": "Could not update lesson. Database error."}), 500
 
 @lessons.route('/delete_lesson/<int:lesson_id>', methods=['DELETE'])
 @login_required 
@@ -151,10 +151,10 @@ def delete_lesson(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
     
     if not lesson:
-        return {"error": "Lesson not found"}, 404
+        return jsonify({"error": "Lesson not found"}), 404
 
     if lesson.course.author_id != current_user.id:
-        return {"error": "You don't have permission to delete this lesson"}, 403
+        return jsonify({"error": "You don't have permission to delete this lesson"}), 403
 
     course_id = lesson.course_id
     deleted_order = lesson.order
@@ -171,7 +171,7 @@ def delete_lesson(lesson_id):
 
     db.session.commit()
 
-    return {
+    return jsonify({
         "status": "success",
         "message": f"Lesson {lesson_id} deleted and subsequent lessons re-ordered."
-    }, 200
+    }), 200
