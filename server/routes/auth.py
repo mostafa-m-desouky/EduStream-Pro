@@ -130,7 +130,7 @@ def profile():
     # New Fetch method
     user = db.session.get(User, current_user.id)
     # Add The Path Of The Profile Picture To The Response
-    image_url = url_for('static', filename='profile_pics/' + user.profile_pic, _external=True)
+    image_url = url_for('static', filename = f'profile_pics/{user.profile_pic}', _external=True)
 
     user_data = {
         "user_id": user.id,
@@ -150,7 +150,7 @@ def profile():
                 "description": course.description,
                 "price": course.price,
                 "duration_hours": course.duration_hours,
-                "thumbnail_url": url_for('static', filename='course_thumbnails/' + (course.thumbnail or 'default_course.jpg'), _external=True)
+                "thumbnail_url": url_for('static', filename= f'course_thumbnails/{course.thumbnail or "default_course.jpg"}', _external=True)
             }
             for course in user.courses
         ]
@@ -222,7 +222,7 @@ def delete_account():
     # user = current_user
     # Fetch a fresh, session-attached user instance instead of using 'current_user' directly.
     # This prevents 'DetachedInstanceError' and ensures the object is bound to the current DB session.
-    user = User.query.get(current_user.id) 
+    user = db.session.get(User, current_user.id)
 
     try:
         # Delete the user's profile picture from the filesystem if it's not a default image.
