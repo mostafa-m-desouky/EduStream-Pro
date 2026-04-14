@@ -3,7 +3,7 @@ import secrets
 from PIL import Image
 from flask import current_app
 
-DEFAULT_IMAGES = ['male_default.png', 'female_default.png', 'default_course.jpg']
+DEFAULT_IMAGES = ['male_default.png', 'female_default.png', 'default_course.jpg', 'default.jpg']
 
 def save_picture(form_picture, folder='profile_pics'):
 
