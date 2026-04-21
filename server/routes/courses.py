@@ -54,10 +54,8 @@ def get_course_details(course_id):
         lessons_list = []
         for lesson in course.lessons:
             lessons_list.append({
-                "id": lesson.id,
                 "title": lesson.title,
                 "description": lesson.description,
-                "content_url": lesson.content_url,
                 "order": lesson.order
             })
 
@@ -78,7 +76,6 @@ def get_course_details(course_id):
 @courses.route('/create_course', methods=['POST'])
 @login_required
 def create_course():
-    user = db.session.get(User, current_user.id)
     if current_user.role != 'teacher':
         return jsonify({"error": "Only teachers can create courses"}), 403
 
@@ -123,7 +120,7 @@ def create_course():
             "course": {
                 "id": new_course.id,
                 "title": new_course.title,
-                "thumbnail_url": url_for('static', filename='course_thumbnails/' + new_course.thumbnail, _external=True)
+                "thumbnail_url": url_for('static', filename=f'course_thumbnails/{new_course.thumbnail}', _external=True)
             }
         }), 201
     except Exception as e:
@@ -134,9 +131,13 @@ def create_course():
 @courses.route('/update_course/<int:course_id>', methods=['PATCH'])
 @login_required
 def update_course(course_id):
+    if current_user.role != 'teacher':
+        return jsonify({"error": "Access denied. Teachers only"}), 403
+    
     course = db.session.get(Course, course_id)
     if not course:
         return jsonify({"error": "Course not found"}), 404
+
     
     if course.author_id != current_user.id:
         return jsonify({"error": "You can only update your own courses"}), 403
@@ -191,6 +192,8 @@ def update_course(course_id):
 @courses.route('/delete_course/<int:course_id>', methods=['DELETE'])
 @login_required
 def delete_course(course_id):
+    if current_user.role != 'teacher':
+        return jsonify({"error": "Access denied. Teachers only"}), 403
     course = db.session.get(Course, course_id)
     if not course:
         return jsonify({"error": "Course not found"}), 404

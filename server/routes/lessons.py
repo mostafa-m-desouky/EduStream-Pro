@@ -1,15 +1,26 @@
-from flask import Blueprint, request, url_for, jsonify
+from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from models import db, Lesson, Course
 
 lessons = Blueprint('lessons', __name__)
 
-@lessons.route('/course/<int:course_id>/lessons', methods=['GET'])
+@lessons.route('/course/<int:course_id>/content', methods=['GET'])
+@login_required
 def get_lessons(course_id):
     course = db.session.get(Course, course_id)
     if not course:
         return jsonify({"error": "Course not found"}), 404
     
+    is_author = (course.author_id == current_user.id)
+    # Authorization Check: Iterate through current user's enrollments to verify 
+    # they have an 'active' status (successful payment) for this specific course 
+    # before granting access to sensitive content.
+    is_enrolled = any(enr.course_id == course_id and enr.status == 'active' for enr in current_user.enrollments)
+    
+    if not (is_author or is_enrolled):
+        return jsonify({"error": "Unauthorized. Only enrolled students and course authors can access lesson content."}), 403
+
+
     lessons_list = []
     for lesson in course.lessons:
         lessons_list.append({
@@ -26,10 +37,19 @@ def get_lessons(course_id):
     }), 200
 
 @lessons.route('/lesson/<int:lesson_id>', methods=['GET'])
+@login_required
 def get_lesson_details(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
     if not lesson:
         return jsonify({"error": "Lesson not found"}), 404
+    
+    course = lesson.course
+    is_author = (course.author_id == current_user.id)
+    is_enrolled = any(enr.course_id == course.id and enr.status == 'active' 
+                      for enr in current_user.enrollments)
+    
+    if not is_author and not is_enrolled:
+        return jsonify({"error": "Access Denied. You must purchase this course to view the lesson content."}), 403
     
     prev_lesson = Lesson.query.filter_by(
         course_id=lesson.course_id, 
