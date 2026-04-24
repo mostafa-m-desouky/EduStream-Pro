@@ -24,10 +24,8 @@ def get_lessons(course_id):
     lessons_list = []
     for lesson in course.lessons:
         lessons_list.append({
-            "id": lesson.id,
             "title": lesson.title,
             "description": lesson.description,
-            "content_url": lesson.content_url,
             "order": lesson.order
         })
     return jsonify({
@@ -48,7 +46,7 @@ def get_lesson_details(lesson_id):
     is_enrolled = any(enr.course_id == course.id and enr.status == 'active' 
                       for enr in current_user.enrollments)
     
-    if not is_author and not is_enrolled:
+    if not (is_author or is_enrolled):
         return jsonify({"error": "Access Denied. You must purchase this course to view the lesson content."}), 403
     
     prev_lesson = Lesson.query.filter_by(
